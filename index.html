@@ -145,6 +145,7 @@
   .chip .e { font-size: 22px; line-height: 1; }
   .chip:hover { border-color: var(--blush); transform: translateY(-1px); }
   .chip[aria-pressed="true"] { border-color: var(--cherry); background: #fff0f3; }
+  .chips.dias { grid-template-columns: 1fr; }
   .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   label.lbl { font-weight: 700; font-size: 14px; color: var(--ink-soft); text-align: left; display: block; margin-bottom: 6px; }
@@ -231,7 +232,7 @@
     ["🍝", "Ir a cenar"], ["☕", "Por un café"], ["🍿", "Al cine"], ["🌮", "Unos tacos"],
     ["🍦", "Por un helado"], ["🌳", "Caminar y platicar"], ["🎳", "Boliche o arcade"], ["🎁", "Sorpréndeme"]
   ];
-  const DIAS = [["📅", "Este viernes"], ["🌞", "Este sábado"], ["🧺", "Este domingo"], ["🗓️", "Otro día"]];
+  const DIAS = [["🌞", "Hoy, domingo 4 de octubre"], ["🌙", "Viernes 16 de octubre"], ["🧺", "Domingo 18 de octubre"]];
   const HORAS = ["1:00 pm", "3:00 pm", "5:00 pm", "6:00 pm", "7:00 pm", "8:00 pm"];
   const NO_TEXTOS = [
     "¿Segura? 🥺", "Piénsalo bien…", "Ándale, di que sí", "Te invito yo 🙈",
@@ -425,26 +426,10 @@
       ${progress(2)}
       <img class="gif" src="${GIF.amor}" alt="Ositos abrazados">
       <h1>¿Qué día te queda?</h1>
-      ${chipsHTML(DIAS, DIAS.some(d => d[1] === state.dia) ? state.dia : (state.dia ? "Otro día" : ""))}
-      <div class="field" id="otro" hidden>
-        <label class="lbl" for="fecha">Escoge la fecha</label>
-        <input type="date" id="fecha">
-      </div>
+      ${chipsHTML(DIAS, state.dia, "dias")}
       <div class="row"><button class="btn btn-yes" id="next" ${state.dia ? "" : "disabled"}>Siguiente →</button></div>`);
-    const otro = $("#otro"), fecha = $("#fecha"), next = $("#next");
-    const hoy = new Date(); fecha.min = hoy.toISOString().slice(0, 10);
-    wireChips(v => {
-      if (v === "Otro día") { otro.hidden = false; state.dia = ""; next.disabled = !fecha.value; fecha.focus(); if (fecha.value) setFecha(); }
-      else { otro.hidden = true; state.dia = v; next.disabled = false; }
-    });
-    function setFecha() {
-      const [y, m, d] = fecha.value.split("-").map(Number);
-      const f = new Date(y, m - 1, d);
-      state.dia = f.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
-      state.dia = state.dia.charAt(0).toUpperCase() + state.dia.slice(1);
-      next.disabled = false;
-    }
-    fecha.addEventListener("change", () => { if (fecha.value) setFecha(); });
+    const next = $("#next");
+    wireChips(v => { state.dia = v; next.disabled = false; });
     next.addEventListener("click", pantallaHora);
   }
 
