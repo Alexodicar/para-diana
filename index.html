@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffe9ef">
+<title>¿Salimos?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&family=Caveat:wght@600&display=swap">
+<style>
+  /* Layout: una tarjeta tipo carta al centro, una pregunta por pantalla. Estética única (rosa) a propósito. */
+  :root {
+    --bg: #ffe9ef;
+    --bg-dot: #ffd3df;
+    --card: #fffaf6;
+    --ink: #4a2530;
+    --ink-soft: #8a5f6a;
+    --cherry: #e8365d;
+    --cherry-dark: #c21f45;
+    --blush: #ffc2d1;
+    --line: #f3d5dc;
+    --display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+    --hand: "Caveat", "Segoe Print", cursive;
+    color-scheme: light;
+  }
+  html, body { height: 100%; margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  * { -webkit-tap-highlight-color: transparent; }
+  button, a, .chip { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .gif { -webkit-user-drag: none; pointer-events: none; }
+  .burst { position: fixed; pointer-events: none; z-index: 60; font-size: 20px; animation: burst .7s ease-out forwards; }
+  @keyframes burst {
+    from { transform: translate(-50%, -50%) scale(.6); opacity: 1; }
+    to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); opacity: 0; }
+  }
+  .sound {
+    position: fixed; z-index: 70;
+    top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--line); background: var(--card); font-size: 18px; cursor: pointer;
+  }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--bg-dot) 1.6px, transparent 1.6px);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    overflow-x: hidden;
+  }
+  .stage {
+    min-height: 100%;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding-inline: 16px;
+    padding-block: 24px;
+    box-sizing: border-box;
+  }
+  .card {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: var(--card);
+    border-radius: 28px;
+    padding: 28px 24px 26px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 0 var(--line), 0 24px 60px -24px rgba(194, 31, 69, .35);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .stamp {
+    position: absolute;
+    top: -14px; right: 18px;
+    background: var(--cherry);
+    color: #fff;
+    font-family: var(--hand);
+    font-size: 20px;
+    padding: 2px 14px 4px;
+    border-radius: 999px;
+    transform: rotate(4deg);
+  }
+  .progress { display: flex; justify-content: center; gap: 6px; }
+  .progress span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: background .3s, transform .3s; }
+  .progress span.on { background: var(--cherry); transform: scale(1.2); }
+  .gif {
+    width: 100%; max-width: 260px; aspect-ratio: 3 / 2;
+    margin: 0 auto; object-fit: contain; display: block;
+    border-radius: 18px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(28px, 7vw, 38px);
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .sub { margin: 0; color: var(--ink-soft); font-size: 16px; line-height: 1.45; text-wrap: balance; }
+  .note { font-family: var(--hand); font-size: 24px; color: var(--cherry); margin: 0; min-height: 30px; }
+
+  .btn {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 20px;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 30px;
+    cursor: pointer;
+    transition: transform .15s ease, background .2s, font-size .3s, padding .3s;
+  }
+  .btn:focus-visible, .chip:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--cherry); outline-offset: 3px; }
+  .btn-yes { background: var(--cherry); color: #fff; box-shadow: 0 4px 0 var(--cherry-dark); }
+  .btn-yes:hover { transform: translateY(-2px); }
+  .btn-yes:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--cherry-dark); }
+  .btn-no { background: #fff; color: var(--ink-soft); border: 2px solid var(--line); }
+  .btn-no.flee {
+    position: fixed;
+    z-index: 50;
+    transition: left .25s cubic-bezier(.3,1.6,.5,1), top .25s cubic-bezier(.3,1.6,.5,1);
+  }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+  .row { display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 64px; }
+
+  .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .chip {
+    font-family: var(--body);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 12px 10px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .chip .e { font-size: 22px; line-height: 1; }
+  .chip:hover { border-color: var(--blush); transform: translateY(-1px); }
+  .chip[aria-pressed="true"] { border-color: var(--cherry); background: #fff0f3; }
+  .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  label.lbl { font-weight: 700; font-size: 14px; color: var(--ink-soft); text-align: left; display: block; margin-bottom: 6px; }
+  input[type="date"], input[type="time"], textarea {
+    width: 100%; box-sizing: border-box;
+    font-family: var(--body); font-size: 16px; color: var(--ink);
+    background: #fff; border: 2px solid var(--line); border-radius: 14px;
+    padding: 12px 14px;
+  }
+  textarea { resize: none; min-height: 84px; }
+  .field { text-align: left; }
+
+  .ticket {
+    background: #fff;
+    border: 2px dashed var(--blush);
+    border-radius: 18px;
+    padding: 16px 18px;
+    text-align: left;
+    display: grid;
+    gap: 10px;
+  }
+  .ticket div { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; }
+  .ticket b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+  .ticket p { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+  .ticket .ic { font-size: 22px; line-height: 1.2; }
+  .link-btn { text-decoration: none; display: inline-block; }
+  .tiny { font-size: 13px; color: var(--ink-soft); margin: 0; }
+  .stage { align-content: center; gap: 14px; }
+  .firma { margin: 0; font-family: var(--hand); font-size: 22px; color: var(--ink-soft); text-align: center; }
+
+  .screen { display: flex; flex-direction: column; gap: 16px; animation: pop .45s cubic-bezier(.3,1.4,.5,1); }
+  @keyframes pop { from { transform: scale(.94) translateY(8px); opacity: .4; } to { transform: none; opacity: 1; } }
+
+  .float { position: fixed; pointer-events: none; z-index: 40; font-size: 26px; animation: rise linear forwards; }
+  @keyframes rise {
+    from { transform: translateY(0) rotate(0); opacity: 1; }
+    to { transform: translateY(-110vh) rotate(var(--r, 30deg)); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .screen, .float { animation: none; }
+    .float { display: none; }
+    .btn-no.flee { transition: none; }
+  }
+  @media (max-height: 700px) {
+    .gif { max-width: 190px; }
+    .card { gap: 12px; padding-top: 22px; }
+  }
+  @media (max-width: 380px) {
+    .chips.times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card { padding: 24px 18px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<button class="sound" id="sound" aria-label="Sonido activado">🔊</button>
+<main class="stage">
+  <section class="card" id="card" aria-live="polite">
+    <span class="stamp">para Diana 💌</span>
+    <div id="view"></div>
+  </section>
+  <p class="firma">hecho con 💖 por Alexandre</p>
+</main>
+
+<script>
+(() => {
+  // ✏️ Personaliza aquí
+  const TU_NOMBRE = "Alexandre";
+  const SU_NOMBRE = "Diana";
+  const TU_WHATSAPP = ""; // ej. "5215512345678" (con lada, sin +). Vacío = ella elige el chat.
+
+  // Si el link termina en #Ana, la saluda por su nombre
+  const hash = decodeURIComponent((location.hash || "").slice(1)).replace(/[-_]/g, " ").trim();
+  const ella = hash ? hash.charAt(0).toUpperCase() + hash.slice(1) : SU_NOMBRE;
+
+  const GIF = {
+    pregunta: "gifs/pregunta.gif", asomado: "gifs/asomado.gif", triste: "gifs/triste.gif",
+    feliz: "gifs/feliz.gif", amor: "gifs/amor.gif", cena: "gifs/cena.gif",
+    esperando: "gifs/esperando.gif", nosvemos: "gifs/nosvemos.gif", yay: "gifs/yay.gif"
+  };
+  Object.values(GIF).forEach(src => { const i = new Image(); i.src = src; });
+
+  const ACTIVIDADES = [
+    ["🍝", "Ir a cenar"], ["☕", "Por un café"], ["🍿", "Al cine"], ["🌮", "Unos tacos"],
+    ["🍦", "Por un helado"], ["🌳", "Caminar y platicar"], ["🎳", "Boliche o arcade"], ["🎁", "Sorpréndeme"]
+  ];
+  const DIAS = [["📅", "Este viernes"], ["🌞", "Este sábado"], ["🧺", "Este domingo"], ["🗓️", "Otro día"]];
+  const HORAS = ["1:00 pm", "3:00 pm", "5:00 pm", "6:00 pm", "7:00 pm", "8:00 pm"];
+  const NO_TEXTOS = [
+    "¿Segura? 🥺", "Piénsalo bien…", "Ándale, di que sí", "Te invito yo 🙈",
+    "El botón no quiere 😅", "¿Ni tantito?", "Ya casi le atinas", "Ok, eso no va a pasar 😌"
+  ];
+
+  const state = { actividad: "", dia: "", hora: "", nota: "" };
+  const view = document.getElementById("view");
+  const $ = s => view.querySelector(s);
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- Toques: vibración, sonidito y corazones donde toca ----------
+  let sonido = true, ctx = null;
+  const btnSound = document.getElementById("sound");
+  btnSound.addEventListener("click", e => {
+    e.stopPropagation();
+    sonido = !sonido;
+    btnSound.textContent = sonido ? "🔊" : "🔇";
+    btnSound.setAttribute("aria-label", sonido ? "Sonido activado" : "Sonido apagado");
+  });
+  function vibrar(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+  function tono(notas, tipo = "sine", dur = .12) {
+    if (!sonido) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+      notas.forEach((f, i) => {
+        const t = ctx.currentTime + i * dur * .8;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = tipo; o.frequency.value = f;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(.12, t + .01);
+        g.gain.exponentialRampToValueAtTime(.001, t + dur * 1.6);
+        o.connect(g).connect(ctx.destination);
+        o.start(t); o.stop(t + dur * 1.8);
+      });
+    } catch {}
+  }
+  const SFX = {
+    tap: () => { tono([880], "sine", .07); vibrar(12); },
+    boing: () => { tono([420, 300], "triangle", .09); vibrar([20, 30, 20]); },
+    yay: () => { tono([523, 659, 784, 1047], "sine", .13); vibrar([40, 50, 40, 50, 80]); }
+  };
+  function corazones(x, y, n = 7) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const e = ["💗", "💕", "✨", "💖"];
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement("span");
+      s.className = "burst";
+      s.textContent = e[i % e.length];
+      const a = (Math.PI * 2 * i) / n, d = 40 + Math.random() * 30;
+      s.style.left = x + "px"; s.style.top = y + "px";
+      s.style.setProperty("--dx", Math.cos(a) * d + "px");
+      s.style.setProperty("--dy", Math.sin(a) * d + "px");
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 800);
+    }
+  }
+  document.addEventListener("pointerdown", e => {
+    const t = e.target.closest(".chip, .btn-yes");
+    if (!t || t.disabled) return;
+    SFX.tap();
+    corazones(e.clientX, e.clientY);
+  });
+
+  function progress(step) {
+    if (!step) return "";
+    return `<div class="progress" aria-label="Paso ${step} de 4">${[1,2,3,4].map(n => `<span class="${n <= step ? "on" : ""}"></span>`).join("")}</div>`;
+  }
+  function render(html) { view.innerHTML = `<div class="screen">${html}</div>`; }
+
+  function lluvia(emojis = ["💖","💕","🌸","✨","💗","🥰"], n = 28) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement("span");
+      el.className = "float";
+      el.textContent = emojis[i % emojis.length];
+      el.style.left = Math.random() * 100 + "vw";
+      el.style.top = (100 + Math.random() * 20) + "vh";
+      el.style.fontSize = (18 + Math.random() * 22) + "px";
+      el.style.setProperty("--r", (Math.random() * 120 - 60) + "deg");
+      el.style.animationDuration = (2.8 + Math.random() * 2.4) + "s";
+      el.style.animationDelay = (Math.random() * .8) + "s";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 6500);
+    }
+  }
+
+  // ---------- 1. La pregunta ----------
+  function pantallaPregunta() {
+    render(`
+      <img class="gif" id="gif" src="${GIF.pregunta}" alt="Osito blanco tímido">
+      <h1>${ella ? esc(ella) + ", ¿" : "¿"}quieres salir conmigo?</h1>
+      <p class="note" id="note"></p>
+      <div class="row" id="row">
+        <button class="btn btn-yes" id="si">Sí 💖</button>
+        <button class="btn btn-no" id="no">No</button>
+      </div>`);
+
+    const si = $("#si"), no = $("#no"), gif = $("#gif"), note = $("#note");
+    let intentos = 0, yesSize = 20;
+
+    let ultimo = 0, paseo = null;
+    // En el cel no hay mouse: el botón brinca en cuanto el dedo lo toca,
+    // y después del primer intento se pasea solo para que cueste atraparlo.
+    function mover() {
+      const bw = no.offsetWidth, bh = no.offsetHeight, m = 16;
+      const sr = si.getBoundingClientRect();
+      let x, y, tries = 0;
+      do {
+        x = m + Math.random() * Math.max(1, innerWidth - bw - 2 * m);
+        y = m + Math.random() * Math.max(1, innerHeight - bh - 2 * m);
+        tries++;
+      } while (tries < 30 && x < sr.right + 20 && x + bw > sr.left - 20 && y < sr.bottom + 20 && y + bh > sr.top - 20);
+      no.style.left = x + "px"; no.style.top = y + "px";
+    }
+    function huir(e) {
+      if (e) e.preventDefault();
+      const ahora = Date.now();
+      if (ahora - ultimo < 350) return; // en el cel, un toque dispara pointerdown + click
+      ultimo = ahora;
+      intentos++;
+      SFX.boing();
+      if (!no.classList.contains("flee")) {
+        const r = no.getBoundingClientRect();
+        no.style.left = r.left + "px"; no.style.top = r.top + "px";
+        no.classList.add("flee");
+        document.body.appendChild(no);
+      }
+      no.textContent = NO_TEXTOS[Math.min(intentos - 1, NO_TEXTOS.length - 1)];
+      yesSize = Math.min(yesSize + 3, 40);
+      si.style.fontSize = yesSize + "px";
+      si.style.padding = `${12 + intentos}px ${30 + intentos * 3}px`;
+      note.textContent = intentos < 3 ? "mmm… ese botón está raro 👀" : intentos < 6 ? "creo que la respuesta correcta es la otra 🙈" : "solo queda una opción 💘";
+      const g = intentos >= 4 ? GIF.triste : GIF.asomado;
+      if (!gif.src.endsWith(g)) gif.src = g;
+      requestAnimationFrame(mover); // mide ya con el texto nuevo
+      if (!paseo && !matchMedia("(prefers-reduced-motion: reduce)").matches) paseo = setInterval(mover, 1600);
+    }
+    no.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") huir(e); });
+    no.addEventListener("pointerdown", huir);
+    no.addEventListener("click", huir);
+    no.addEventListener("focus", () => { if (intentos > 0) si.focus(); });
+
+    si.addEventListener("click", () => {
+      clearInterval(paseo);
+      document.querySelectorAll("body > .btn-no").forEach(b => b.remove());
+      pantallaSi();
+    });
+  }
+
+  // ---------- 2. ¡Dijo que sí! ----------
+  function pantallaSi() {
+    SFX.yay();
+    lluvia();
+    render(`
+      <img class="gif" src="${GIF.yay}" alt="Osito festejando">
+      <h1>¡Sabía que dirías que sí! 🥳</h1>
+      <p class="sub">Diana, me acabas de alegrar el día. Ahora ayúdame a planearlo, son solo 4 preguntitas.</p>
+      <div class="row"><button class="btn btn-yes" id="go">Va, planeemos ✨</button></div>`);
+    $("#go").addEventListener("click", pantallaActividad);
+  }
+
+  function chipsHTML(items, sel, cls = "") {
+    return `<div class="chips ${cls}">${items.map(([e, t]) =>
+      `<button class="chip" data-v="${esc(t)}" aria-pressed="${sel === t}"><span class="e">${e}</span>${esc(t)}</button>`).join("")}</div>`;
+  }
+  function wireChips(onPick) {
+    view.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+      view.querySelectorAll(".chip").forEach(o => o.setAttribute("aria-pressed", "false"));
+      c.setAttribute("aria-pressed", "true");
+      onPick(c.dataset.v);
+    }));
+  }
+
+  // ---------- 3. ¿Qué hacemos? ----------
+  function pantallaActividad() {
+    render(`
+      ${progress(1)}
+      <img class="gif" src="${GIF.cena}" alt="Ositos comiendo juntos">
+      <h1>¿Qué te gustaría hacer?</h1>
+      ${chipsHTML(ACTIVIDADES, state.actividad)}
+      <div class="row"><button class="btn btn-yes" id="next" ${state.actividad ? "" : "disabled"}>Siguiente →</button></div>`);
+    wireChips(v => { state.actividad = v; $("#next").disabled = false; });
+    $("#next").addEventListener("click", pantallaDia);
+  }
+
+  // ---------- 4. ¿Qué día? ----------
+  function pantallaDia() {
+    render(`
+      ${progress(2)}
+      <img class="gif" src="${GIF.amor}" alt="Ositos abrazados">
+      <h1>¿Qué día te queda?</h1>
+      ${chipsHTML(DIAS, DIAS.some(d => d[1] === state.dia) ? state.dia : (state.dia ? "Otro día" : ""))}
+      <div class="field" id="otro" hidden>
+        <label class="lbl" for="fecha">Escoge la fecha</label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="row"><button class="btn btn-yes" id="next" ${state.dia ? "" : "disabled"}>Siguiente →</button></div>`);
+    const otro = $("#otro"), fecha = $("#fecha"), next = $("#next");
+    const hoy = new Date(); fecha.min = hoy.toISOString().slice(0, 10);
+    wireChips(v => {
+      if (v === "Otro día") { otro.hidden = false; state.dia = ""; next.disabled = !fecha.value; fecha.focus(); if (fecha.value) setFecha(); }
+      else { otro.hidden = true; state.dia = v; next.disabled = false; }
+    });
+    function setFecha() {
+      const [y, m, d] = fecha.value.split("-").map(Number);
+      const f = new Date(y, m - 1, d);
+      state.dia = f.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+      state.dia = state.dia.charAt(0).toUpperCase() + state.dia.slice(1);
+      next.disabled = false;
+    }
+    fecha.addEventListener("change", () => { if (fecha.value) setFecha(); });
+    next.addEventListener("click", pantallaHora);
+  }
+
+  // ---------- 5. ¿A qué hora? ----------
+  function pantallaHora() {
+    render(`
+      ${progress(3)}
+      <img class="gif" src="${GIF.esperando}" alt="Osito esperando con su celular">
+      <h1>¿A qué hora paso por ti?</h1>
+      <div class="chips times">${HORAS.map(h => `<button class="chip" data-v="${h}" aria-pressed="${state.hora === h}">${h}</button>`).join("")}</div>
+      <div class="field">
+        <label class="lbl" for="hora">…o pon tu propia hora</label>
+        <input type="time" id="hora">
+      </div>
+      <div class="row"><button class="btn btn-yes" id="next" ${state.hora ? "" : "disabled"}>Siguiente →</button></div>`);
+    const next = $("#next"), hora = $("#hora");
+    wireChips(v => { state.hora = v; hora.value = ""; next.disabled = false; });
+    hora.addEventListener("change", () => {
+      if (!hora.value) return;
+      const [h, m] = hora.value.split(":").map(Number);
+      state.hora = `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+      view.querySelectorAll(".chip").forEach(o => o.setAttribute("aria-pressed", "false"));
+      next.disabled = false;
+    });
+    next.addEventListener("click", pantallaNota);
+  }
+
+  // ---------- 6. Algo más ----------
+  function pantallaNota() {
+    render(`
+      ${progress(4)}
+      <img class="gif" src="${GIF.feliz}" alt="Ositos felices">
+      <h1>¿Algo que deba saber?</h1>
+      <p class="sub">Un antojo, algo que no te guste, tu color favorito… lo que sea 💭</p>
+      <div class="field">
+        <label class="lbl" for="nota">Tu nota (opcional)</label>
+        <textarea id="nota" maxlength="240" placeholder="Ej. no me gusta el picante, y quiero postre 🍰">${esc(state.nota)}</textarea>
+      </div>
+      <div class="row"><button class="btn btn-yes" id="next">Listo 💌</button></div>`);
+    $("#next").addEventListener("click", () => { state.nota = $("#nota").value.trim(); pantallaFinal(); });
+  }
+
+  // ---------- 7. Es una cita ----------
+  function pantallaFinal() {
+    SFX.yay();
+    lluvia(["💖","🥰","💌","🌹","✨","💕"], 36);
+    const resumen =
+      `¡Dije que SÍ! 💖\n` +
+      `Plan: ${state.actividad}\n` +
+      `Día: ${state.dia}\n` +
+      `Hora: ${state.hora}` +
+      (state.nota ? `\nNota: ${state.nota}` : "");
+    const wa = `https://wa.me/${TU_WHATSAPP}?text=${encodeURIComponent(resumen)}`;
+    render(`
+      <img class="gif" src="${GIF.nosvemos}" alt="Ositos que no pueden esperar">
+      <h1>¡Es una cita! 💘</h1>
+      <div class="ticket">
+        <div><span class="ic">🎯</span><span><b>Plan</b><p>${esc(state.actividad)}</p></span></div>
+        <div><span class="ic">📅</span><span><b>Día</b><p>${esc(state.dia)}</p></span></div>
+        <div><span class="ic">⏰</span><span><b>Hora</b><p>${esc(state.hora)}</p></span></div>
+        ${state.nota ? `<div><span class="ic">💭</span><span><b>Nota</b><p>${esc(state.nota)}</p></span></div>` : ""}
+      </div>
+      <p class="sub">Mándale tus respuestas a ${esc(TU_NOMBRE)} para que lo apunte 😌</p>
+      <div class="row">
+        <a class="btn btn-yes link-btn" href="${wa}" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+        <button class="btn btn-no" id="copy">Copiar</button>
+      </div>
+      <p class="tiny" id="copied"></p>
+      <p class="note">no puedo esperar, Diana 🥰<br>— Alexandre</p>`);
+    $("#copy").addEventListener("click", async () => {
+      const out = $("#copied");
+      try { await navigator.clipboard.writeText(resumen); out.textContent = "Copiado. Ahora pégalo en el chat 💬"; }
+      catch { out.textContent = resumen.replace(/\n/g, " · "); }
+    });
+  }
+
+  pantallaPregunta();
+})();
+</script>
+</body>
+</html>
