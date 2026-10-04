@@ -235,8 +235,20 @@
   const DIAS = [["🌞", "Hoy, domingo 4 de octubre"], ["🌙", "Viernes 16 de octubre"], ["🧺", "Domingo 18 de octubre"]];
   const HORAS = ["1:00 pm", "3:00 pm", "5:00 pm", "6:00 pm", "7:00 pm", "8:00 pm"];
   const NO_TEXTOS = [
-    "¿Segura? 🥺", "Piénsalo bien…", "Ándale, di que sí", "Te invito yo 🙈",
-    "El botón no quiere 😅", "¿Ni tantito?", "Ya casi le atinas", "Ok, eso no va a pasar 😌"
+    "¿Segura? 🥺", "¿Segura segura?", "Piénsalo bien…", "Piénsalo otra vez 🤔",
+    "¿Y si mejor sí?", "Ándale, di que sí", "Te invito yo 🙈", "Hay postre incluido 🍰",
+    "Prometo ser buena onda", "Llevo flores 🌹", "¿Ni tantito?", "Mira qué osito tan triste 😢",
+    "El botón no quiere 😅", "Me estás rompiendo el corazón 💔", "¿Ni por los tacos? 🌮", "Te dejo escoger la música 🎶",
+    "Ya casi le atinas", "Uy, casi", "No me hagas esto 🥲", "Te compro un helado 🍦",
+    "Soy muy divertido, lo juro", "Pregúntale a tu corazón 💗", "Una cita nada más", "Por favor, por favor 🙏",
+    "Estoy llorando aquí 😭", "Ya me quedé sin ideas…", "Ok, ya en serio 🥺", "Diana, porfis",
+    "El 'No' renunció 😌", "Este botón es decorativo"
+  ];
+  const NO_NOTAS = [
+    "mmm… ese botón está raro 👀", "¿segura que quieres picarle ahí?", "el otro botón se ve más bonito 💖",
+    "creo que la respuesta correcta es la otra 🙈", "el osito se está poniendo triste…", "no te rindas… pero del otro lado 😅",
+    "dato curioso: el Sí se hace más grande 👀", "vas a cansarte antes que el botón 😌", "Alexandre está esperando tu respuesta 🥺",
+    "ya ni el botón quiere que digas que no", "el osito ya no aguanta 😭", "solo queda una opción 💘"
   ];
 
   const state = { actividad: "", dia: "", hora: "", nota: "" };
@@ -362,12 +374,17 @@
         no.classList.add("flee");
         document.body.appendChild(no);
       }
-      no.textContent = NO_TEXTOS[Math.min(intentos - 1, NO_TEXTOS.length - 1)];
-      yesSize = Math.min(yesSize + 3, 40);
+      // Recorre todos los textos; al terminarlos, sigue con los últimos al azar para que nunca "acabe"
+      no.textContent = intentos <= NO_TEXTOS.length
+        ? NO_TEXTOS[intentos - 1]
+        : NO_TEXTOS[NO_TEXTOS.length - 8 + Math.floor(Math.random() * 8)];
+      // El Sí crece poquito a poquito y el No se encoge después de muchos intentos
+      yesSize = Math.min(20 + intentos * 0.8, 44);
       si.style.fontSize = yesSize + "px";
-      si.style.padding = `${12 + intentos}px ${30 + intentos * 3}px`;
-      note.textContent = intentos < 3 ? "mmm… ese botón está raro 👀" : intentos < 6 ? "creo que la respuesta correcta es la otra 🙈" : "solo queda una opción 💘";
-      const g = intentos >= 4 ? GIF.triste : GIF.asomado;
+      si.style.padding = `${Math.min(12 + intentos * 0.5, 26)}px ${Math.min(30 + intentos * 1.5, 70)}px`;
+      no.style.fontSize = Math.max(20 - Math.max(0, intentos - 15) * 0.5, 13) + "px";
+      note.textContent = NO_NOTAS[Math.min(Math.floor((intentos - 1) / 3), NO_NOTAS.length - 1)];
+      const g = intentos >= 10 ? GIF.triste : GIF.asomado;
       if (!gif.src.endsWith(g)) gif.src = g;
       requestAnimationFrame(mover); // mide ya con el texto nuevo
       if (!paseo && !matchMedia("(prefers-reduced-motion: reduce)").matches) paseo = setInterval(mover, 1600);
